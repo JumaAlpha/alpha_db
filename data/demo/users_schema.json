@@ -1,0 +1,28 @@
+{
+  "id": {
+    "type": "number",
+    "primaryKey": true,
+    "autoIncrement": true
+  },
+  "username": {
+    "type": "string",
+    "required": true,
+    "unique": true
+  },
+  "email": {
+    "type": "string",
+    "required": true
+  },
+  "age": {
+    "type": "number",
+    "defaultValue": 18
+  },
+  "active": {
+    "type": "boolean",
+    "defaultValue": true
+  },
+  "createdAt": {
+    "type": "date",
+    "defaultValue": "2026-01-16T09:04:47.878Z"
+  }
+}

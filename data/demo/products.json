@@ -1,0 +1,23 @@
+[
+  {
+    "id": "P001",
+    "name": "Laptop",
+    "price": 999,
+    "category": "electronics",
+    "inStock": true
+  },
+  {
+    "id": "P002",
+    "name": "Mouse",
+    "price": 25,
+    "category": "electronics",
+    "inStock": true
+  },
+  {
+    "id": "P003",
+    "name": "Desk",
+    "price": 150,
+    "category": "furniture",
+    "inStock": true
+  }
+]

@@ -1,0 +1,22 @@
+{
+  "id": {
+    "type": "string",
+    "primaryKey": true
+  },
+  "name": {
+    "type": "string",
+    "required": true
+  },
+  "price": {
+    "type": "number",
+    "required": true
+  },
+  "category": {
+    "type": "string",
+    "defaultValue": "general"
+  },
+  "inStock": {
+    "type": "boolean",
+    "defaultValue": true
+  }
+}

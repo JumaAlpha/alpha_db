@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "username": "alice",
+    "email": "alice@example.com",
+    "age": 26,
+    "active": true,
+    "createdAt": "2026-01-16T09:04:47.878Z"
+  },
+  {
+    "username": "bob",
+    "email": "bob@example.com",
+    "age": 30,
+    "active": true,
+    "createdAt": "2026-01-16T09:04:47.878Z",
+    "id": 2
+  },
+  {
+    "username": "charlie",
+    "email": "charlie@example.com",
+    "age": 18,
+    "active": true,
+    "createdAt": "2026-01-16T09:04:47.878Z",
+    "id": 3
+  },
+  {
+    "username": "alice",
+    "email": "another@example.com",
+    "age": 18,
+    "active": true,
+    "createdAt": "2026-01-16T09:04:47.878Z",
+    "id": 4
+  },
+  {
+    "username": "david",
+    "email": "not-an-email",
+    "age": 18,
+    "active": true,
+    "createdAt": "2026-01-16T09:04:47.878Z",
+    "id": 5
+  }
+]
