@@ -1,0 +1,10 @@
+{
+  "EXISTS": {
+    "type": "users",
+    "primaryKey": true,
+    "autoIncrement": true
+  },
+  "username": {
+    "type": "varchar"
+  }
+}

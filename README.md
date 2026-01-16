@@ -23,7 +23,6 @@ npm start
 
 ### Use the Command Line Interface
 ```bash
-# Start interactive SQL shell
 npm run repl
 
 # Available commands:
@@ -58,8 +57,6 @@ alpha-db/
 - Node.js 18+
 - Express.js (for web interface)
 
-## 🤖 Development Note
-Built with AI assistance (Claude) for learning purposes. All architectural decisions and implementations were made by me.
 
 ## 📄 License
 MIT License

@@ -1,114 +1,65 @@
 const express = require('express');
 const Database = require('./Database.js');
+const path = require('path');
+const fs = require('fs');
 
 class WebServer {
   constructor(port = 3000) {
     this.app = express();
     this.port = port;
     this.databases = {};
+    
+    // Load all existing databases on startup
+    this.loadExistingDatabases();
+    
     this.setupMiddleware();
     this.setupRoutes();
   }
 
+  // New method: Load existing databases
+  loadExistingDatabases() {
+    try {
+      const dataDir = path.join(process.cwd(), 'data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+        console.log('📁 Created data directory');
+        return;
+      }
+      
+      const dbDirs = fs.readdirSync(dataDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+      
+      console.log(`📂 Found ${dbDirs.length} existing database(s):`);
+      
+      dbDirs.forEach(dbName => {
+        try {
+          this.databases[dbName] = new Database(dbName);
+          const tableCount = this.databases[dbName].listTables().length;
+          console.log(`   • ${dbName} (${tableCount} tables)`);
+        } catch (error) {
+          console.error(`   ✗ Failed to load database ${dbName}:`, error.message);
+        }
+      });
+      
+      if (dbDirs.length === 0) {
+        console.log('   No databases found');
+      }
+    } catch (error) {
+      console.error('Error loading existing databases:', error.message);
+    }
+  }
+
   setupMiddleware() {
     this.app.use(express.json());
-    this.app.use(express.static('public'));
+    this.app.use(express.static(path.join(__dirname, 'public')));
     this.app.use(express.urlencoded({ extended: true }));
   }
 
   setupRoutes() {
-    // Home page
+    // Serve index.html
     this.app.get('/', (req, res) => {
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Alpha DB Web Interface</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 40px; }
-            .container { max-width: 1200px; margin: 0 auto; }
-            .row { display: flex; gap: 20px; }
-            .col { flex: 1; }
-            textarea, input, button { width: 100%; margin: 5px 0; padding: 10px; }
-            textarea { height: 200px; font-family: monospace; }
-            button { background: #007bff; color: white; border: none; cursor: pointer; }
-            button:hover { background: #0056b3; }
-            .result { background: #f5f5f5; padding: 10px; margin: 10px 0; }
-            .error { color: red; }
-            .success { color: green; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <h1>Alpha DB Web Interface</h1>
-            <div class="row">
-              <div class="col">
-                <h3>SQL Query</h3>
-                <form id="queryForm">
-                  <select id="database">
-                    <option value="testdb">testdb</option>
-                    <option value="mydb">mydb</option>
-                  </select>
-                  <textarea id="sql" placeholder="Enter SQL query..."></textarea>
-                  <button type="submit">Execute</button>
-                </form>
-                <div id="result"></div>
-              </div>
-              <div class="col">
-                <h3>Quick Examples</h3>
-                <button onclick="runExample('CREATE TABLE users (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR NOT NULL, age INT)')">
-                  Create Users Table
-                </button>
-                <button onclick="runExample('INSERT INTO users (name, age) VALUES (\\'Alice\\', 25)')">
-                  Insert Sample Data
-                </button>
-                <button onclick="runExample('SELECT * FROM users')">
-                  Select All Users
-                </button>
-                <button onclick="runExample('UPDATE users SET age = 26 WHERE name = \\'Alice\\'')">
-                  Update Record
-                </button>
-                <button onclick="runExample('DELETE FROM users WHERE name = \\'Alice\\'')">
-                  Delete Record
-                </button>
-                <h3>Database Status</h3>
-                <div id="status">Ready</div>
-              </div>
-            </div>
-          </div>
-          <script>
-            document.getElementById('queryForm').addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const db = document.getElementById('database').value;
-              const sql = document.getElementById('sql').value;
-              
-              const response = await fetch('/api/query', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ database: db, sql: sql })
-              });
-              
-              const result = await response.json();
-              const resultDiv = document.getElementById('result');
-              
-              if (result.success) {
-                resultDiv.innerHTML = \`
-                  <div class="success"><strong>Success:</strong> \${result.message}</div>
-                  \${result.data ? '<pre>' + JSON.stringify(result.data, null, 2) + '</pre>' : ''}
-                \`;
-              } else {
-                resultDiv.innerHTML = \`<div class="error"><strong>Error:</strong> \${result.error}</div>\`;
-              }
-            });
-            
-            function runExample(sql) {
-              document.getElementById('sql').value = sql;
-              document.getElementById('queryForm').dispatchEvent(new Event('submit'));
-            }
-          </script>
-        </body>
-        </html>
-      `);
+      res.sendFile(path.join(__dirname, 'index.html'));
     });
 
     // API endpoint for SQL queries
@@ -123,6 +74,7 @@ class WebServer {
         // Get or create database
         if (!this.databases[database]) {
           this.databases[database] = new Database(database);
+          console.log(`📝 Created new database in memory: ${database}`);
         }
         
         const db = this.databases[database];
@@ -134,12 +86,76 @@ class WebServer {
       }
     });
 
+    // API endpoint to create database
+    this.app.post('/api/database/create', (req, res) => {
+      const { name } = req.body;
+      
+      if (!name) {
+        return res.json({ success: false, error: 'Database name required' });
+      }
+      
+      try {
+        // Check if database already exists
+        const dataDir = path.join(process.cwd(), 'data', name);
+        if (fs.existsSync(dataDir)) {
+          console.log(`⚠️  Database already exists on disk: ${name}`);
+        }
+        
+        this.databases[name] = new Database(name);
+        console.log(`✅ Created database: ${name}`);
+        
+        res.json({ 
+          success: true, 
+          message: `Database '${name}' created successfully` 
+        });
+      } catch (error) {
+        res.json({ success: false, error: error.message });
+      }
+    });
+
+    // API endpoint to list databases
+    this.app.get('/api/databases', (req, res) => {
+      const dbs = Object.keys(this.databases);
+      
+      // Also check for databases that might exist on disk but aren't loaded
+      const dataDir = path.join(process.cwd(), 'data');
+      let allDbs = [...dbs];
+      
+      if (fs.existsSync(dataDir)) {
+        const diskDbs = fs.readdirSync(dataDir, { withFileTypes: true })
+          .filter(dirent => dirent.isDirectory())
+          .map(dirent => dirent.name);
+        
+        // Merge and deduplicate
+        allDbs = [...new Set([...allDbs, ...diskDbs])];
+      }
+      
+      res.json({ success: true, data: allDbs.sort() });
+    });
+
     // API endpoint to list tables
     this.app.get('/api/:database/tables', (req, res) => {
       const dbName = req.params.database;
       
       if (!this.databases[dbName]) {
-        this.databases[dbName] = new Database(dbName);
+        // Database doesn't exist in memory, try to load from disk
+        const dataDir = path.join(process.cwd(), 'data', dbName);
+        if (!fs.existsSync(dataDir)) {
+          return res.json({ 
+            success: false, 
+            error: `Database '${dbName}' does not exist` 
+          });
+        }
+        
+        try {
+          this.databases[dbName] = new Database(dbName);
+          console.log(`📥 Loaded database from disk: ${dbName}`);
+        } catch (error) {
+          return res.json({ 
+            success: false, 
+            error: `Failed to load database '${dbName}': ${error.message}` 
+          });
+        }
       }
       
       const tables = this.databases[dbName].listTables();
@@ -151,7 +167,24 @@ class WebServer {
       const { database, table } = req.params;
       
       if (!this.databases[database]) {
-        return res.json({ success: false, error: 'Database not found' });
+        // Try to load from disk
+        const dataDir = path.join(process.cwd(), 'data', database);
+        if (!fs.existsSync(dataDir)) {
+          return res.json({ 
+            success: false, 
+            error: `Database '${database}' does not exist` 
+          });
+        }
+        
+        try {
+          this.databases[database] = new Database(database);
+          console.log(`📥 Loaded database from disk: ${database}`);
+        } catch (error) {
+          return res.json({ 
+            success: false, 
+            error: `Failed to load database '${database}': ${error.message}` 
+          });
+        }
       }
       
       try {
@@ -162,17 +195,61 @@ class WebServer {
         res.json({ success: false, error: error.message });
       }
     });
+
+    // API endpoint to drop table
+    this.app.delete('/api/:database/tables/:table', (req, res) => {
+      const { database, table } = req.params;
+      
+      if (!this.databases[database]) {
+        return res.json({ success: false, error: 'Database not found' });
+      }
+      
+      try {
+        const db = this.databases[database];
+        db.dropTable(table);
+        console.log(`🗑️  Dropped table: ${database}.${table}`);
+        res.json({ success: true, message: `Table '${table}' dropped` });
+      } catch (error) {
+        res.json({ success: false, error: error.message });
+      }
+    });
+
+    // Health check endpoint
+    this.app.get('/api/health', (req, res) => {
+      res.json({ 
+        success: true, 
+        status: 'running', 
+        loadedDatabases: Object.keys(this.databases).length 
+      });
+    });
+
+    // Reload all databases from disk
+    this.app.post('/api/reload-databases', (req, res) => {
+      this.loadExistingDatabases();
+      res.json({ 
+        success: true, 
+        message: 'Databases reloaded',
+        count: Object.keys(this.databases).length 
+      });
+    });
   }
 
   start() {
     this.app.listen(this.port, () => {
-      console.log(`Alpha DB Web Server running on http://localhost:${this.port}`);
-      console.log(`REPL available via: npm run repl`);
+      console.log(`\n🚀 Alpha DB Web Interface running on http://localhost:${this.port}`);
+      console.log(`📊 Loaded ${Object.keys(this.databases).length} database(s)`);
+      console.log(`\n💡 Open http://localhost:${this.port} in your browser to start!`);
+      console.log(`\n📝 Available API endpoints:`);
+      console.log(`   • POST /api/query - Execute SQL query`);
+      console.log(`   • POST /api/database/create - Create new database`);
+      console.log(`   • GET /api/databases - List all databases`);
+      console.log(`   • GET /api/:database/tables - List tables in database`);
+      console.log(`   • GET /api/health - Health check`);
     });
   }
 }
 
-// Start server if run directly
+// Starting the server
 if (require.main === module) {
   const server = new WebServer();
   server.start();

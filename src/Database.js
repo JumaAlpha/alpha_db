@@ -16,6 +16,20 @@ class Database {
     this.loadTables();
   }
 
+  // Static method to list all existing databases
+  static listDatabases() {
+    const dataDir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dataDir)) {
+      return [];
+    }
+    
+    const databases = fs.readdirSync(dataDir, { withFileTypes: true })
+      .filter(dirent => dirent.isDirectory())
+      .map(dirent => dirent.name);
+      
+    return databases;
+  }
+
   loadTables() {
     try {
       const files = fs.readdirSync(this.dataDir);

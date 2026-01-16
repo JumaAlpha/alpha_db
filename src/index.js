@@ -1,6 +1,5 @@
 const Database = require('./Database.js');
 
-// Demo function showing all features
 function demo() {
   console.log('=== Alpha DB Demonstration ===\n');
   

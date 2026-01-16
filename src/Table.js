@@ -230,7 +230,6 @@ class Table {
       if (idx !== -1) indices.push(idx);
     }
     
-    // Remove old index entries
     for (const col in this.indexes) {
       for (const idx of indices) {
         const oldValue = this.data[idx][col];

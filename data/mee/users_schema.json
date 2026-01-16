@@ -1,0 +1,10 @@
+{
+  "id": {
+    "type": "int",
+    "primaryKey": true,
+    "autoIncrement": true
+  },
+  "username": {
+    "type": "varchar"
+  }
+}
